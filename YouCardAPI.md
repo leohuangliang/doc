@@ -597,18 +597,17 @@ https://{host}/api/v1/vcc/card/batch/apply
 
 ##### 参数
 
-| 参数名                    | 必选 | 类型   | 说明                                       |
-|---------------------------|------|--------|--------------------------------------------|
-| unique_order_id           | 是   | string | 商户请求流水号                             |
-| cards_id                  | 是   | string | 申请卡任务的子账户                         |
-| bin                       | 是   | string | 申请卡的 bin                               |
-| quantity                  | 是   | string | 申请卡任务的卡数量                         |
-| initial_amount            | 否   | float  | 申请卡初始金额                             |
-| day_amount_limit          | 否   | string | 卡日限额                                   |
-| total_amount_limit        | 否   | string | 总限额                                     |
-| is_use_default_cardholder | 否   | int    | 是否使用默认持卡人（0:不使用;1:使用）      |
-| cardholder_ids            | 否   | string | 当不使用默认持卡人时候填写持卡人 id,号分割 |
-| card_type                 | 是   | string | 申请卡的类型 0:储值卡;1:共享卡             |
+| 参数名                    | 必选 | 类型   | 说明                                                                                                                      |
+|---------------------------|------|--------|---------------------------------------------------------------------------------------------------------------------------|
+| unique_order_id           | 是   | string | 商户请求流水号                                                                                                            |
+| cards_id                  | 是   | string | 申请卡任务的子账户                                                                                                        |
+| bin                       | 是   | string | 申请卡的 bin                                                                                                              |
+| quantity                  | 是   | string | 申请卡任务的卡数量                                                                                                        |
+| initial_amount            | 否   | float  | 申请卡初始金额                                                                                                            |
+| transaction_limits        | 否   | object | 卡交易限额(只对共享卡有效) {"single_amount":0.0,"day_amount":0.0,"week_amount":0.0,"month_amount":0.0,"total_amount":0.0} |
+| is_use_default_cardholder | 否   | int    | 是否使用默认持卡人（0:不使用;1:使用）                                                                                     |
+| cardholder_ids            | 否   | string | 当不使用默认持卡人时候填写持卡人 id,号分割                                                                                |
+| card_type                 | 否   | int    | 默认使用 0，卡类型（0:储值卡;1:共享卡）                                                                                   |
 
 ##### 返回示例
 
@@ -896,14 +895,14 @@ https://{host}/api/v1/vcc/card/order/list
 
 ##### 参数
 
-| 参数名          | 必选 | 类型   | 说明                                                                |
-|-----------------|------|--------|---------------------------------------------------------------------|
-| virtual_id      | 否   | string | 卡 id                                                               |
-| unique_order_id | 否   | string | 商户交易流水号                                                      |
-| type            | 否   | string | 类型 (充值/退值) 状态 Enums in (Recharge,ChargeOut)                 |
-| status          | 否   | string | 状态 Enums in (Failed,Success,Pending,ChannelProcessing,Processing) |
-| start_page      | 否   | string | 开始的页数 默认为 1                                                 |
-| row             | 否   | string | 显示的条数 默认为 20 最大为 100                                     |
+| 参数名          | 类型 | 说明   |
+|-----------------|------|--------|
+| virtual_id      | 否   | string |
+| unique_order_id | 否   | string |
+| type            | 否   | string |
+| status          | 否   | string |
+| start_page      | 否   | string |
+| row             | 否   | string |
 
 ##### 返回示例
 
@@ -1011,7 +1010,8 @@ https://{host}/api/v1/vcc/card/balance
 ##### 简要描述
 
 - 卡额度限制
-- 注：共享卡可以进行额度限制
+- 注 1：共享卡可以进行额度限制，多个限额配置至少选择一个
+- 注 2：根据渠道的能力不同，部分限额可能不生效，具体请与产品经理沟通
 
 ##### 请求 URL
 
@@ -1026,14 +1026,14 @@ https://{host}/api/v1/vcc/card/share/limit
 
 ##### 参数
 
-| 参数名        | 必选 | 类型   | 说明         |
-|---------------|------|--------|--------------|
-| virtual_id    | 是   | string | 卡 id        |
-| single_amount | 是   | string | 单次交易限额 |
-| day_amount    | 是   | string | 单日交易限额 |
-| week_amount   | 是   | string | 周交易限额   |
-| month_amount  | 是   | string | 月交易限额   |
-| total_amount  | 是   | string | 总交易限额   |
+| 参数名        | 必选 | 类型   | 说明                                     |
+|---------------|------|--------|------------------------------------------|
+| virtual_id    | 是   | string | 卡 id                                    |
+| single_amount | 否   | float  | 单次交易限额(不传则不修改原配置)         |
+| day_amount    | 否   | float  | 单日交易限额(不传则不修改原配置)         |
+| week_amount   | 否   | float  | 周交易限额(不传则不修改原配置)           |
+| month_amount  | 否   | float  | 月交易限额(不传则不修改原配置)           |
+| total_amount  | 否   | float  | 卡生命周期总交易限额(不传则不修改原配置) |
 
 ##### 返回示例
 
@@ -1049,7 +1049,63 @@ https://{host}/api/v1/vcc/card/share/limit
 }
 ```
 
-#### 4.3.9 销卡
+#### 4.3.9 卡额度查询
+
+##### 简要描述
+
+- 卡额度查询
+
+##### 请求 URL
+
+```http
+https://{host}/api/v1/vcc/card/share/limitQuery
+```
+
+##### 请求方式
+
+- GET
+
+##### 参数
+
+| 参数名     | 必选 | 类型   | 说明  |
+|------------|------|--------|-------|
+| virtual_id | 是   | string | 卡 id |
+
+##### 返回示例
+
+```json
+{
+  "code": "200",
+  "msg": "OK",
+  "result": {
+    "code": "0000",
+    "message": "成功",
+    "data": {
+      "card_number": "2234****9365",
+      "single_amount": "0.00",
+      "day_amount": "101.00",
+      "week_amount": "0.00",
+      "month_amount": "0.00",
+      "total_amount": "0.00",
+      "used_amount": "0.00"
+    }
+  }
+}
+```
+
+##### 返回参数说明
+
+| 参数名        | 类型   | 说明       |
+|---------------|--------|------------|
+| card_number   | string | 卡掩码     |
+| single_amount | string | 单笔限额   |
+| day_amount    | string | 日限额     |
+| week_amount   | string | 周限额     |
+| month_amount  | string | 月限额     |
+| total_amount  | string | 可用总额度 |
+| used_amount   | string | 已用额度   |
+
+#### 4.3.10 销卡
 
 ##### 简要描述
 
@@ -1087,7 +1143,7 @@ https://{host}/api/v1/vcc/card/destroy
 }
 ```
 
-#### 4.3.10 撤销销卡（已弃用）
+#### 4.3.11 撤销销卡（已弃用）
 
 ##### 简要描述
 
@@ -1123,7 +1179,7 @@ https://{host}/api/v1/vcc/card/revoke
 }
 ```
 
-#### 4.3.11 卡冻结
+#### 4.3.12 卡冻结
 
 ##### 简要描述
 
@@ -1160,7 +1216,7 @@ https://{host}/api/v1/vcc/card/block
 }
 ```
 
-#### 4.3.12 卡解冻
+#### 4.3.13 卡解冻
 
 ##### 简要描述
 
@@ -1197,7 +1253,7 @@ https://{host}/api/v1/vcc/card/unblock
 }
 ```
 
-#### 4.3.13 获取卡交易信息
+#### 4.3.14 获取卡交易信息
 
 ##### 简要描述
 
@@ -1295,7 +1351,7 @@ https://{host}/api/v1/vcc/card/authorizations
 | merchant_country   | string | 交易地址                                |
 | authorization_time | string | 授权时间                                |
 
-#### 4.3.14 获取卡清算交易信息
+#### 4.3.15 获取卡清算交易信息
 
 ##### 简要描述
 
@@ -1495,10 +1551,23 @@ func main() {
 
 ##### 参数
 
-| 参数名       | 必选 | 类型   | 说明                                                 |
-|--------------|------|--------|------------------------------------------------------|
-| batch_id     | 是   | string | 回调通知批次 id                                      |
-| batch_status | 是   | string | 通知批次状态 Enums in (Pending,Process,Fail,Success) |
+| 参数名                 | 类型   | 说明                                                                         |
+|------------------------|--------|------------------------------------------------------------------------------|
+| virtual_id             | string | 卡 id                                                                        |
+| cards_id               | string | 该卡对应的卡任务 id                                                          |
+| bin                    | string | 卡 bin                                                                       |
+| batch_id               | string | 卡对应的卡批次 id                                                            |
+| card_type              | string | 卡类型                                                                       |
+| card_number            | string | 卡号                                                                         |
+| cvv                    | string | cvv                                                                          |
+| expiration_year        | string | 有效年份                                                                     |
+| expiration_month       | string | 有效月份                                                                     |
+| allow_card_out         | string | 是否可转出                                                                   |
+| is_transaction         | string | 是否统计交易                                                                 |
+| apply_for_cancellation | string | 销卡申请时间                                                                 |
+| status                 | string | 卡状态 状态 Enums in (Disable,Active,Pending,Processing,CardExpired,Opening) |
+| created_at             | string | 卡创建时间                                                                   |
+| day_amount_limit       | string | 卡日交易限额                                                                 |
 
 ##### 返回示例
 
@@ -1509,8 +1578,13 @@ func main() {
   "result": {
     "code": "0000",
     "data": {
-      "batch_id": "2024061708200240290",
-      "batch_status": "Pending"
+      "virtual_id": "1718854722753140",
+      "status": "CardExpired",
+      "transfer_info": {
+        "unique_id": "172682522216891892",
+        "amount": "33.00",
+        "currency": "USD"
+      }
     },
     "message": "成功",
     "sign": "4b6d86f5eaf416af7c4d892ecbd7f86ad28c5fd16bd057c991cc07333602902a"
@@ -1538,10 +1612,17 @@ func main() {
 
 ##### 参数
 
-| 参数名       | 必选 | 类型   | 说明                                                 |
-|--------------|------|--------|------------------------------------------------------|
-| batch_id     | 是   | string | 回调通知批次 id                                      |
-| batch_status | 是   | string | 通知批次状态 Enums in (Pending,Process,Fail,Success) |
+| 参数名          | 类型   | 说明                                                                 |
+|-----------------|--------|----------------------------------------------------------------------|
+| unique_id       | string | 系统流水号                                                           |
+| unique_order_id | string | 商户请求流水号                                                       |
+| virtual_id      | string | 当前查询卡 id                                                        |
+| cards_id        | string | cid                                                                  |
+| card_number     | string | 卡号                                                                 |
+| amount          | string | 金额                                                                 |
+| currency        | string | 币种                                                                 |
+| status          | string | 充值/退值 状态 (Failed,Success,Pending,ChannelProcessing,Processing) |
+| type            | string | 类型 充值/退值(Recharge,ChargeOut)                                   |
 
 ##### 返回示例
 
@@ -1552,8 +1633,15 @@ func main() {
   "result": {
     "code": "0000",
     "data": {
-      "batch_id": "2024061708200240290",
-      "batch_status": "Pending"
+      "unique_id": "1717730116153051",
+      "unique_order_id": "1717730116153051",
+      "virtual_id": "1717730116153051",
+      "cards_id": "C160103346595807009",
+      "card_number": "515783XXXXXX7840",
+      "amount": "10.00",
+      "currency": "USD",
+      "status": "Success",
+      "type": "Recharge"
     },
     "message": "成功",
     "sign": "4b6d86f5eaf416af7c4d892ecbd7f86ad28c5fd16bd057c991cc07333602902a"
@@ -1581,10 +1669,23 @@ func main() {
 
 ##### 参数
 
-| 参数名       | 必选 | 类型   | 说明                                                 |
-|--------------|------|--------|------------------------------------------------------|
-| batch_id     | 是   | string | 回调通知批次 id                                      |
-| batch_status | 是   | string | 通知批次状态 Enums in (Pending,Process,Fail,Success) |
+| 参数名             | 类型   | 说明                                    |
+|--------------------|--------|-----------------------------------------|
+| authorization_id   | string | 交易 id                                 |
+| virtual_id         | string | 卡 id                                   |
+| card_number        | string | 卡号                                    |
+| amount             | string | 卡交易金额                              |
+| currency           | string | 卡交易币种                              |
+| platform_amount    | string | 平台交易金额                            |
+| platform_currency  | string | 平台交易币种                            |
+| transaction_type   | string | 交易类型(Auth,Reversal,Return）         |
+| transaction_status | string | 交易状态 状态 Enums in (Failed,Success) |
+| fail_reason        | string | 失败原因                                |
+| auth_code          | string | 授权码                                  |
+| merchant_mcc       | string | mcc                                     |
+| merchant_name      | string | 卡账单                                  |
+| merchant_country   | string | 交易地址                                |
+| authorization_time | string | 授权时间                                |
 
 ##### 返回示例
 
@@ -1595,8 +1696,21 @@ func main() {
   "result": {
     "code": "0000",
     "data": {
-      "batch_id": "2024061708200240290",
-      "batch_status": "Pending"
+      "amount": "30.00",
+      "auth_code": "",
+      "authorization_id": "172630089001571614",
+      "authorization_time": "2024-08-09 18:06:38",
+      "card_number": "223467XXX5791",
+      "currency": "USD",
+      "fail_reason": "",
+      "merchant_country": "",
+      "merchant_mcc": "10261",
+      "merchant_name": "zqc_test222",
+      "platform_amount": "11.11",
+      "platform_currency": "USD",
+      "transaction_status": "Success",
+      "transaction_type": "Auth",
+      "virtual_id": "1723191314704889"
     },
     "message": "成功",
     "sign": "4b6d86f5eaf416af7c4d892ecbd7f86ad28c5fd16bd057c991cc07333602902a"
